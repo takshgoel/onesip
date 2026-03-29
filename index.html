@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>One Sip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --water-light: #a8d8f0;
+    --water-mid: #4ba8e0;
+    --water-deep: #1a6fa8;
+    --water-overflow: #0d4f7c;
+    --bg: #f0f6fb;
+    --text-primary: #1a2a3a;
+    --text-secondary: #5a7a9a;
+    --text-muted: #8aaabf;
+    --glass-stroke: #3a5a7a;
+    --glass-fill: rgba(255,255,255,0.35);
+    --shadow: rgba(26,111,168,0.15);
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-primary);
+    touch-action: manipulation;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.97);
+  }
+
+  /* ── ONBOARDING ── */
+  #screen-onboard {
+    background: #fff;
+    padding: 2.5rem 2rem;
+    gap: 0;
+  }
+  .onboard-logo {
+    font-family: 'Lora', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--water-deep);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+  .onboard-tagline {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+  }
+  .onboard-glass-wrap {
+    margin-bottom: 2.5rem;
+  }
+  .onboard-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 2.5rem;
+  }
+  .onboard-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--water-mid);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+  .step-text strong {
+    color: var(--text-primary);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .onboard-btn {
+    background: var(--water-deep);
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    padding: 0.875rem 3rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .onboard-btn:active { transform: scale(0.97); }
+
+  /* ── SPLASH ── */
+  #screen-splash {
+    background: var(--water-deep);
+    gap: 1rem;
+  }
+  .splash-logo {
+    font-family: 'Lora', serif;
+    font-size: 2.5rem;
+    font-weight: 400;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .splash-sub {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .splash-drop {
+    font-size: 3rem;
+    animation: splashDrop 0.6s ease-out;
+  }
+  @keyframes splashDrop {
+    0% { transform: translateY(-20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  /* ── MAIN APP ── */
+  #screen-main {
+    background: var(--bg);
+    padding: 0 1.5rem;
+    gap: 0;
+    justify-content: space-between;
+    padding-top: max(2.5rem, env(safe-area-inset-top));
+    padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
+  }
+
+  /* Streak */
+  .streak-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.2s forwards;
+  }
+  .streak-text {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+  .streak-fire { font-size: 1.1rem; }
+  .streak-count {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* Center: glass + count */
+  .center-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* SVG Glass */
+  .glass-container {
+    position: relative;
+    width: 180px;
+    height: 230px;
+  }
+  #glass-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  /* Water wave animation */
+  .wave { animation: waveMove 2.5s linear infinite; }
+  .wave2 { animation: waveMove 3.2s linear infinite reverse; opacity: 0.5; }
+  @keyframes waveMove {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Overflow drops */
+  .overflow-drop {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--water-mid);
+    animation: dropFall 0.8s ease-in forwards;
+    pointer-events: none;
+  }
+  @keyframes dropFall {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(60px) scale(0.3); opacity: 0; }
+  }
+
+  /* Ripple on fill */
+  .ripple-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--water-mid);
+    animation: rippleOut 0.7s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes rippleOut {
+    0% { width: 20px; height: 20px; opacity: 0.8; transform: translate(-50%, -50%); }
+    100% { width: 120px; height: 120px; opacity: 0; transform: translate(-50%, -50%); }
+  }
+
+  /* Goal glow */
+  .goal-glow {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(75,168,224,0.3) 0%, transparent 70%);
+    animation: goalPulse 1.5s ease-in-out 3;
+    pointer-events: none;
+  }
+  @keyframes goalPulse {
+    0%, 100% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  /* Count display */
+  .count-area {
+    text-align: center;
+  }
+  .count-number {
+    font-family: 'Lora', serif;
+    font-size: 3.5rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .count-number.bump {
+    animation: countBump 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes countBump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+  .count-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+
+  /* Bottom: undo + hint */
+  .bottom-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.4s forwards;
+  }
+  .undo-btn {
+    background: none;
+    border: 1px solid rgba(90,122,154,0.25);
+    border-radius: 100px;
+    padding: 0.5rem 1.5rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .undo-btn:active { background: rgba(75,168,224,0.1); transform: scale(0.97); }
+  .undo-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .open-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* Undo flash */
+  .undo-flash {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.6);
+    pointer-events: none;
+    animation: flashFade 0.4s ease forwards;
+  }
+  @keyframes flashFade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Goal celebration overlay */
+  #goal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .goal-message {
+    font-family: 'Lora', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--water-deep);
+    text-align: center;
+    background: rgba(255,255,255,0.92);
+    padding: 1.25rem 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(26,111,168,0.15);
+    animation: goalMsgAnim 2.5s ease forwards;
+    line-height: 1.5;
+  }
+  @keyframes goalMsgAnim {
+    0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+    15% { opacity: 1; transform: translateY(0) scale(1); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-8px); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Background water texture */
+  body::before {
+    content: '';
+    position: fixed;
+    bottom: -100px;
+    left: -100px;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(75,168,224,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    top: -80px;
+    right: -80px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(26,111,168,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="screen" id="screen-onboard">
+  <div class="onboard-logo">one sip</div>
+  <div class="onboard-tagline">water, simply tracked</div>
+
+  <div class="onboard-glass-wrap">
+    <svg width="80" height="100" viewBox="0 0 80 100">
+      <defs>
+        <clipPath id="og-clip">
+          <polygon points="8,4 72,4 62,96 18,96"/>
+        </clipPath>
+      </defs>
+      <polygon points="8,4 72,4 62,96 18,96" fill="rgba(255,255,255,0.6)" stroke="#3a5a7a" stroke-width="2.5" stroke-linejoin="round"/>
+      <rect x="8" y="60" width="64" height="40" fill="#4ba8e0" clip-path="url(#og-clip)" opacity="0.7"/>
+      <polygon points="8,4 72,4 62,96 18,96" fill="none" stroke="#3a5a7a" stroke-width="2.5"/>
+    </svg>
+  </div>
+
+  <div class="onboard-steps">
+    <div class="onboard-step">
+      <div class="step-num">1</div>
+      <div class="step-text">
+        <strong>Open = one glass</strong>
+        Every time you open this app, it automatically logs one glass of water and shows you the animation.
+      </div>
+    </div>
+    <div class="onboard-step">
+      <div class="step-num">2</div>
+      <div class="step-text">
+        <strong>Opened by mistake?</strong>
+        Tap "undo last sip" — that's the only button. It removes the glass you just logged.
+      </div>
+    </div>
+    <div class="onboard-step">
+      <div class="step-num">3</div>
+      <div class="step-text">
+        <strong>That's it</strong>
+        Hit 8 glasses every day to build your streak. Resets at midnight.
+      </div>
+    </div>
+  </div>
+
+  <button class="onboard-btn" onclick="finishOnboard()">Got it, let's go</button>
+</div>
+
+<!-- SPLASH -->
+<div class="screen hidden" id="screen-splash">
+  <div class="splash-drop">💧</div>
+  <div class="splash-logo">one sip</div>
+  <div class="splash-sub">logging your glass…</div>
+</div>
+
+<!-- MAIN APP -->
+<div class="screen hidden" id="screen-main">
+
+  <!-- Streak -->
+  <div class="streak-bar" id="streak-bar">
+    <span class="streak-fire">🔥</span>
+    <span class="streak-count" id="streak-count">0</span>
+    <span class="streak-text" id="streak-label">day streak</span>
+  </div>
+
+  <!-- Glass + Count -->
+  <div class="center-area">
+    <div class="glass-container" id="glass-container">
+      <svg id="glass-svg" viewBox="0 0 180 230" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="glass-clip">
+            <!-- tapered glass shape: wider top, narrower bottom -->
+            <polygon id="glass-poly" points="18,8 162,8 138,222 42,222"/>
+          </clipPath>
+          <clipPath id="glass-clip-inner">
+            <polygon points="22,12 158,12 135,218 45,218"/>
+          </clipPath>
+        </defs>
+
+        <!-- Drop shadow -->
+        <ellipse cx="90" cy="228" rx="52" ry="6" fill="rgba(26,111,168,0.10)"/>
+
+        <!-- Water fill (clipped to glass shape) -->
+        <g clip-path="url(#glass-clip-inner)">
+          <!-- Water body -->
+          <rect id="water-body" x="0" y="230" width="180" height="230" fill="#4ba8e0"/>
+
+          <!-- Wave surface -->
+          <g id="wave-group" style="overflow:hidden">
+            <path id="wave-path" class="wave" fill="rgba(255,255,255,0.35)" d=""/>
+            <path id="wave-path2" class="wave2" fill="rgba(255,255,255,0.2)" d=""/>
+          </g>
+
+          <!-- Glass inner shine -->
+          <ellipse cx="65" cy="150" rx="14" ry="50" fill="rgba(255,255,255,0.18)" transform="rotate(-8,65,150)"/>
+        </g>
+
+        <!-- Glass body (outline + fill) -->
+        <polygon points="18,8 162,8 138,222 42,222"
+          fill="rgba(255,255,255,0.22)"
+          stroke="#2a4a6a"
+          stroke-width="3.5"
+          stroke-linejoin="round"/>
+
+        <!-- Rim highlight -->
+        <line x1="20" y1="8" x2="160" y2="8" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- Side highlight -->
+        <line x1="30" y1="20" x2="46" y2="210" stroke="rgba(255,255,255,0.3)" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+
+      <!-- Goal glow (shown at 8) -->
+      <div id="goal-glow" style="display:none; position:absolute; inset:-20px; border-radius:50%; pointer-events:none;"></div>
+    </div>
+
+    <div class="count-area">
+      <div class="count-number" id="count-display">0</div>
+      <div class="count-label" id="count-label-text">glasses today</div>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom-area">
+    <button class="undo-btn" id="undo-btn" onclick="undoSip()" disabled>undo last sip</button>
+    <div class="open-hint">Open this app each time you drink a glass</div>
+  </div>
+
+</div>
+
+<!-- Goal celebration overlay -->
+<div id="goal-overlay"></div>
+
+<script>
+// ── STATE ──
+const GOAL = 8;
+const STORE = 'oneSip_v2';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+function saveState(s) {
+  localStorage.setItem(STORE, JSON.stringify(s));
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function getState() {
+  let s = loadState();
+  const today = todayStr();
+  if (!s) {
+    s = { count: 0, streak: 0, lastDate: today, seen: false };
+    saveState(s);
+    return s;
+  }
+  // Midnight reset
+  if (s.lastDate !== today) {
+    const yesterday = s.lastDate;
+    const prevCount = s.count;
+    // Streak logic: did they hit goal yesterday?
+    if (prevCount >= GOAL) {
+      s.streak = (s.streak || 0) + 1;
+    } else if (s.lastDate) {
+      s.streak = 0;
+    }
+    s.count = 0;
+    s.lastDate = today;
+    saveState(s);
+  }
+  return s;
+}
+
+let state = getState();
+
+// ── GLASS DRAWING ──
+// Glass inner coords (tapered): top y=12, bot y=218, left-top x=22, right-top x=158, left-bot x=45, right-bot x=135
+// At fill pct, water top y = lerp(218, 12, pct)
+// Water left at y = lerp between (45,218) and (22,12)
+// Water right at y = lerp between (135,218) and (158,12)
+
+function glassXatY(y) {
+  // Returns [leftX, rightX] at a given y inside the glass inner polygon
+  // Top inner edge: y=12, left=22, right=158
+  // Bot inner edge: y=218, left=45, right=135
+  const t = (y - 218) / (12 - 218); // 0 at bottom, 1 at top
+  const lx = 45 + t * (22 - 45);
+  const rx = 135 + t * (158 - 135);
+  return [lx, rx];
+}
+
+function setWaterLevel(pct) {
+  // pct 0..1 (can exceed 1 for overflow visual, but we cap fill at ~0.99)
+  const fillPct = Math.min(pct, 1.0);
+  const topY = 218 - fillPct * (218 - 14); // glass inner top
+  const waterBody = document.getElementById('water-body');
+  waterBody.setAttribute('y', topY);
+  waterBody.setAttribute('height', 230 - topY + 10);
+
+  // Wave color deepens with fill
+  const blue1 = fillPct < 0.5 ? '#a8d8f0' : fillPct < 0.85 ? '#4ba8e0' : '#1a6fa8';
+  const blue2 = fillPct < 0.5 ? '#78c0e8' : fillPct < 0.85 ? '#2a90d0' : '#0d4f7c';
+  waterBody.setAttribute('fill', blue1);
+  updateWave(topY, blue2);
+}
+
+function updateWave(waterTopY, color) {
+  // Builds a wave path at waterTopY
+  const w = 360; // double width for seamless scroll
+  const amp = 4;
+  const wg = document.getElementById('wave-group');
+  wg.setAttribute('transform', `translate(0,${waterTopY - 6})`);
+
+  let d = `M0,${amp} `;
+  for (let x = 0; x <= w; x += 20) {
+    const y = amp + Math.sin((x / w) * Math.PI * 4) * amp;
+    d += `L${x},${y} `;
+  }
+  d += `L${w},30 L0,30 Z`;
+
+  let d2 = `M0,${amp*0.7} `;
+  for (let x = 0; x <= w; x += 15) {
+    const y = amp*0.7 + Math.cos((x / w) * Math.PI * 6) * amp * 0.8;
+    d2 += `L${x},${y} `;
+  }
+  d2 += `L${w},30 L0,30 Z`;
+
+  document.getElementById('wave-path').setAttribute('d', d);
+  document.getElementById('wave-path').setAttribute('fill', 'rgba(255,255,255,0.3)');
+  document.getElementById('wave-path2').setAttribute('d', d2);
+}
+
+function animateFill(fromPct, toPct, duration, onDone) {
+  const start = performance.now();
+  function step(now) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - t, 3);
+    const cur = fromPct + (toPct - fromPct) * ease;
+    setWaterLevel(cur);
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      setWaterLevel(toPct);
+      if (onDone) onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// ── OVERFLOW DROPS ──
+function spawnOverflowDrops() {
+  const container = document.getElementById('glass-container');
+  const positions = [
+    { left: '15px', top: '8px' },
+    { left: '155px', top: '8px' },
+    { left: '-5px', top: '20px' },
+    { left: '168px', top: '18px' },
+    { left: '40px', top: '-5px' },
+    { left: '130px', top: '-5px' },
+  ];
+  positions.forEach((pos, i) => {
+    setTimeout(() => {
+      const drop = document.createElement('div');
+      drop.className = 'overflow-drop';
+      drop.style.left = pos.left;
+      drop.style.top = pos.top;
+      drop.style.animationDelay = `${i * 0.06}s`;
+      container.appendChild(drop);
+      setTimeout(() => drop.remove(), 1200);
+    }, i * 80);
+  });
+}
+
+// ── RIPPLE ──
+function spawnRipple() {
+  const container = document.getElementById('glass-container');
+  const ripple = document.createElement('div');
+  ripple.className = 'ripple-ring';
+  ripple.style.left = '50%';
+  ripple.style.top = '45%';
+  container.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 800);
+}
+
+// ── UI UPDATE ──
+function updateUI(animated) {
+  const count = state.count;
+  const pct = count / GOAL;
+
+  // Count
+  const display = document.getElementById('count-display');
+  display.textContent = count;
+  if (animated) {
+    display.classList.remove('bump');
+    void display.offsetWidth;
+    display.classList.add('bump');
+  }
+
+  // Label
+  const lbl = document.getElementById('count-label-text');
+  if (count === 1) lbl.textContent = 'glass today';
+  else lbl.textContent = 'glasses today';
+
+  // Streak
+  document.getElementById('streak-count').textContent = state.streak;
+  document.getElementById('streak-label').textContent = state.streak === 1 ? 'day streak' : 'day streak';
+
+  // Undo btn
+  document.getElementById('undo-btn').disabled = count === 0;
+
+  return pct;
+}
+
+// ── CELEBRATE GOAL ──
+function celebrateGoal() {
+  // Glow pulse
+  const glow = document.getElementById('goal-glow');
+  glow.style.display = 'block';
+  glow.innerHTML = '';
+  const inner = document.createElement('div');
+  inner.className = 'goal-glow';
+  glow.appendChild(inner);
+  setTimeout(() => { glow.style.display = 'none'; glow.innerHTML = ''; }, 5000);
+
+  // Message
+  const overlay = document.getElementById('goal-overlay');
+  const msg = document.createElement('div');
+  msg.className = 'goal-message';
+  msg.innerHTML = '8 glasses 💧<br><span style="font-size:0.9rem;font-style:normal;color:#5a7a9a;">Goal reached for today</span>';
+  overlay.appendChild(msg);
+  setTimeout(() => msg.remove(), 2600);
+}
+
+// ── LOG A SIP ──
+function logSip(isNew) {
+  state.count++;
+  saveState(state);
+  const prevPct = (state.count - 1) / GOAL;
+  const newPct = state.count / GOAL;
+  const isOverflow = state.count > GOAL;
+
+  updateUI(false);
+
+  if (isOverflow) {
+    // Already full, just animate overflow
+    setWaterLevel(1.0);
+    spawnRipple();
+    spawnOverflowDrops();
+    document.getElementById('count-display').classList.remove('bump');
+    void document.getElementById('count-display').offsetWidth;
+    document.getElementById('count-display').classList.add('bump');
+  } else {
+    animateFill(prevPct, newPct, 700, () => {
+      spawnRipple();
+      if (state.count === GOAL) {
+        celebrateGoal();
+      }
+    });
+    document.getElementById('count-display').classList.remove('bump');
+    void document.getElementById('count-display').offsetWidth;
+    document.getElementById('count-display').classList.add('bump');
+  }
+
+  document.getElementById('undo-btn').disabled = false;
+}
+
+// ── UNDO ──
+function undoSip() {
+  if (state.count <= 0) return;
+  const prevCount = state.count;
+  state.count--;
+  saveState(state);
+
+  // Flash
+  const flash = document.createElement('div');
+  flash.className = 'undo-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 500);
+
+  const newPct = state.count / GOAL;
+  const prevPct = prevCount / GOAL;
+  animateFill(Math.min(prevPct, 1), Math.max(newPct, 0), 500, null);
+  updateUI(true);
+}
+
+// ── SCREEN TRANSITIONS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const target = document.getElementById(id);
+  target.classList.remove('hidden');
+}
+
+// ── ONBOARDING ──
+function finishOnboard() {
+  state.seen = true;
+  saveState(state);
+  startSplash();
+}
+
+// ── SPLASH → MAIN ──
+function startSplash() {
+  showScreen('screen-splash');
+  setTimeout(() => {
+    showScreen('screen-main');
+    // Set water level immediately (no animation) for existing count
+    const pct = state.count / GOAL;
+    setWaterLevel(Math.min(pct, 1));
+    updateUI(false);
+    // Then log the new sip
+    setTimeout(() => logSip(true), 300);
+  }, 1400);
+}
+
+// ── INIT ──
+function init() {
+  if (!state.seen) {
+    showScreen('screen-onboard');
+  } else {
+    startSplash();
+  }
+}
+
+// Initialize wave path
+setWaterLevel(0);
+init();
+</script>
+</body>
+</html>
